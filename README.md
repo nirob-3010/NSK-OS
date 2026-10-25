@@ -1,157 +1,182 @@
-# NSK OS v0.3 (ফ্রম-স্ক্র্যাচ অপারেটিং সিস্টেম)
+NSK OS v0.3 — A From-Scratch Operating System
 
-**NSK OS** হলো সম্পূর্ণ নিজস্ব কার্নেল, নিজস্ব মেমরি ম্যানেজার এবং নিজস্ব বুটযোগ্য GUI সহ একটি আধুনিক ৩২-বিট x86 (i686 Protected Mode) অপারেটিং সিস্টেম। এতে কোনো লিনাক্স বা দেবিয়ান ভিত্তিক উপাদান নেই — এটি সম্পূর্ণ স্ক্র্যাচ থেকে নির্মিত।
+NSK OS is a custom-built operating system designed for 32-bit x86 systems running in i686 Protected Mode. It features its own kernel, memory management system, and bootable graphical interface.
 
----
+Unlike Linux-based distributions, NSK OS is being developed from the ground up, without relying on Linux or Debian as its foundation. The goal is to build a lightweight operating system with a solid kernel architecture that can eventually support a modern desktop experience.
 
-## 🚀 Phase 1: Boot & Core Kernel (সম্পূর্ণ)
+Phase 1: Boot Process and Core Kernel
 
-Phase 1-এ কার্নেলের ভিত্তিপ্রস্তর সফলভাবে স্থাপিত হয়েছে:
-1. **Multiboot2 বুট হেডার**: `boot/boot.asm` ফাইলটিতে GRUB Multiboot2 স্পেসিফিকেশন (`0xE85250D6`), ৩২-বিট প্রটেক্টেড মোড স্ট্যাক ইনিশিয়ালাইজেশন এবং মেমরি/ফ্রেমবাফার রিকোয়েস্ট ট্যাগ অন্তর্ভুক্ত।
-2. **Global Descriptor Table (GDT)**: কার্নেল কোড, কার্নেল ডাটা, ইউজার কোড ও ইউজার ডাটার জন্য ৪ জিবি ফ্ল্যাট মেমরি সেগমেন্টেশন।
-3. **Interrupt Descriptor Table (IDT)**: ২৫৬টি গেট সহ ৩২টি ইন্টেল সিপিইউ এক্সেপশন ও হার্ডওয়্যার ইন্টারাপ্ট হ্যান্ডলার।
-4. **8259 PIC রিম্যাপিং**: IRQ 0-7 কে 0x20..0x27 এবং IRQ 8-15 কে 0x28..0x2F ভেক্টরে রিম্যাপ করা হয়েছে।
-5. **8254 PIT টাইমার (100 Hz)**: প্রতি সেকেন্ডে ১০০ টিক ফ্রিকোয়েন্সিতে সুনির্দিষ্ট টাইমিং এবং আপটাইম ট্র্যাকিং।
-6. **UART 16550 Serial Driver (COM1)**: 0x3F8 পোর্টে ৩৮৪০০ বড-রেটে সিরিয়াল ডিবাগিং ও লগিং।
-7. **ফ্রি-স্ট্যান্ডিং `kprintf` ইঞ্জিন**: `%s`, `%d`, `%u`, `%x`, `%p`, `%c` ফরম্যাটিং সাপোর্ট।
-8. **Physical Memory Manager (PMM)**: Multiboot2 মেমরি ম্যাপ পার্স করে বিটম্যাপের মাধ্যমে প্রতি ৪ কেবি পেজ ফ্রেম অ্যালোকেশন/ডিঅ্যালোকেশন।
-9. **Kernel Heap Allocator (`kmalloc` / `kfree`)**: ৪ মেগাবাইট মার্ক থেকে ১৬ মেগাবাইট ডাইনামিক হিপ পুল, বাউন্ডারি ট্যাগ এবং ফ্রি ব্লক কোয়ালেসিং সাপোর্ট।
+Status: Core implementation completed
 
----
+Phase 1 establishes the foundation of NSK OS, including the boot process, CPU configuration, interrupt handling, memory management, and kernel debugging.
 
-## 📁 Repository Structure (Phase 1)
+The following components have been implemented:
 
-```
+1. Multiboot2 Boot Header — The "boot/boot.asm" file contains a Multiboot2-compliant header using the magic value "0xE85250D6". It also handles the initial 32-bit protected-mode entry point, stack setup, and memory and framebuffer requests.
+
+2. Global Descriptor Table (GDT) — Configures flat memory segments for kernel code, kernel data, user code, and user data, providing the foundation for memory segmentation.
+
+3. Interrupt Descriptor Table (IDT) — Sets up 256 interrupt gates, with handlers for CPU exceptions and hardware interrupts.
+
+4. 8259 Programmable Interrupt Controller (PIC) — Remaps IRQs to avoid conflicts with CPU exception vectors. The master PIC uses vectors "0x20–0x27", while the slave PIC uses "0x28–0x2F".
+
+5. 8254 Programmable Interval Timer (PIT) — Configures the system timer to generate 100 interrupts per second, enabling system tick counting and uptime tracking.
+
+6. 16550 UART Serial Driver — Initializes the COM1 serial port at "0x3F8" with a baud rate of 38,400 for kernel debugging and diagnostic logging.
+
+7. Freestanding "kprintf" Engine — Provides formatted kernel output with support for "%s", "%d", "%u", "%x", "%p", and "%c".
+
+8. Physical Memory Manager (PMM) — Parses the Multiboot2 memory map and uses a bitmap-based allocator to manage physical memory in 4 KiB page frames.
+
+9. Kernel Heap Allocator — Implements "kmalloc" and "kfree", with support for a dynamically managed heap, boundary tags, and free-block coalescing. The planned heap region spans from 4 MiB to 16 MiB.
+
+Together, these components provide the initial infrastructure needed to move beyond basic booting and begin developing the operating system's graphics and desktop subsystems.
+
+Repository Structure
+
 ├── boot/
-│   ├── boot.asm             # Multiboot2 header & 32-bit protected mode entry
-│   └── grub.cfg             # GRUB Multiboot2 bootloader configuration
+│   ├── boot.asm             # Multiboot2 header and boot entry point
+│   └── grub.cfg             # GRUB Multiboot2 configuration
 ├── include/
-│   ├── gdt.h                # Global Descriptor Table declarations
-│   ├── idt.h                # Interrupt Descriptor Table & ISR types
-│   ├── io.h                 # Inline x86 assembly I/O port helpers (inb, outb)
-│   ├── kheap.h              # Dynamic kernel heap allocator declarations
-│   ├── multiboot2.h         # Multiboot2 tags & memory structures
-│   ├── pic.h                # 8259 Programmable Interrupt Controller
-│   ├── pit.h                # 8254 Programmable Interval Timer (100 Hz)
-│   ├── pmm.h                # Physical Memory Manager (bitmap page frame allocator)
-│   ├── printf.h             # Kernel kprintf declarations
-│   ├── serial.h             # COM1 UART 16550 serial port driver
-│   ├── string.h             # Freestanding string and memory operations
-│   └── types.h              # Fixed-width integer and standard freestanding types
+│   ├── gdt.h                # GDT declarations
+│   ├── idt.h                # IDT and ISR definitions
+│   ├── io.h                 # x86 I/O port helpers
+│   ├── kheap.h              # Kernel heap allocator interface
+│   ├── multiboot2.h         # Multiboot2 structures and tags
+│   ├── pic.h                # 8259 PIC definitions
+│   ├── pit.h                # PIT timer interface
+│   ├── pmm.h                # Physical memory manager interface
+│   ├── printf.h             # Kernel formatted output
+│   ├── serial.h             # COM1 serial driver
+│   ├── string.h             # Freestanding string and memory functions
+│   └── types.h              # Fixed-width and freestanding types
 ├── kernel/
-│   ├── gdt.c                # GDT setup (Kernel/User Code & Data segments)
-│   ├── gdt_flush.asm        # Assembly segment reloading and far jump
-│   ├── idt.c                # IDT setup, exception & IRQ dispatcher
-│   ├── isr.asm              # 32 CPU exception stubs & 16 IRQ stubs
-│   ├── kernel.c             # Kernel kmain entry, boot flow & self-tests
-│   ├── kheap.c              # kmalloc, kfree, kcalloc, krealloc implementation
+│   ├── gdt.c                # GDT initialization
+│   ├── gdt_flush.asm        # Segment reload and far jump
+│   ├── idt.c                # IDT setup and interrupt dispatch
+│   ├── isr.asm               # CPU exception and IRQ stubs
+│   ├── kernel.c             # Kernel entry point and self-tests
+│   ├── kheap.c              # Kernel heap allocation functions
 │   ├── multiboot2.c         # Multiboot2 tag parser
-│   ├── pic.c                # 8259 PIC cascade remapping & EOI handler
-│   ├── pit.c                # 8254 PIT timer driver (100 Hz frequency)
-│   ├── pmm.c                # Bitmap page frame allocator from mmap
-│   ├── printf.c             # Formatted output to serial & console
-│   ├── serial.c             # UART 16550 COM1 serial port driver
-│   └── string.c             # memcpy, memset, strlen, strcmp, etc.
+│   ├── pic.c                # PIC remapping and EOI handling
+│   ├── pit.c                # 100 Hz PIT timer
+│   ├── pmm.c                # Bitmap-based physical memory allocator
+│   ├── printf.c             # Formatted kernel output
+│   ├── serial.c             # UART serial implementation
+│   └── string.c             # String and memory utilities
 ├── tests/
-│   └── test_phase1.py       # Automated QEMU serial smoke test
+│   └── test_phase1.py       # QEMU serial smoke tests
 ├── .github/workflows/
-│   └── build-iso.yml        # GitHub Actions CI for compiling & ISO build
-├── linker.ld                # Linker script (1MB base load, 4KB section align)
-├── Makefile                 # Build targets: all, iso, run, test, clean
-└── README.md                # Documentation
-```
+│   └── build-iso.yml        # Automated build and ISO workflow
+├── linker.ld                # Kernel linker script
+├── Makefile                 # Build, ISO, run, test, and clean targets
+└── README.md                # Project documentation
 
----
+🛠️ Building and Running NSK OS
 
-## 🛠️ How to Build and Run (কিভাবে বিল্ড ও রান করবেন)
+Prerequisites
 
-### প্রয়োজনীয় টুলস:
-- `gcc` (with `-m32` support: `gcc-multilib`)
-- `nasm` (Netwide Assembler)
-- `ld` (GNU Binutils)
-- `qemu-system-i386` (QEMU x86 emulator)
-- `grub-pc-bin`, `xorriso`, `mtools` (for creating bootable ISO)
+The following tools are required to build and test the project:
 
-### ১. কার্নেল কম্পাইল করা:
-```bash
+- GCC with 32-bit compilation support ("gcc-multilib")
+- NASM
+- GNU Binutils, including "ld"
+- QEMU System Emulator for x86
+- GRUB utilities ("grub-pc-bin")
+- "xorriso"
+- "mtools"
+
+1. Compile the kernel
+
 make all
-```
-এটি `build/kernel.bin` তৈরি করবে।
 
-### ২. বুটযোগ্য ISO তৈরি করা:
-```bash
+This builds the kernel binary at:
+
+build/kernel.bin
+
+2. Create a bootable ISO
+
 make iso
-```
-এটি `nsk-os-0.3.iso` তৈরি করবে (সাইজ ২০ মেগাবাইটের অনেক নিচে, মাত্র ~৮ মেগাবাইট)।
 
-### ৩. QEMU এ সরাসরি টেস্ট করা:
-```bash
+The build process generates:
+
+nsk-os-0.3.iso
+
+The expected ISO size is approximately 8 MB, keeping the image well below 20 MB.
+
+3. Run NSK OS in QEMU
+
 make run
-```
-অথবা সরাসরি কার্নেল বাইনারি টেস্ট করতে:
-```bash
-make run-kernel
-```
 
-### প্রত্যাশিত বুট আউটপুট (QEMU Serial COM1):
-```
+To test the kernel binary directly, use:
+
+make run-kernel
+
+These commands provide a convenient way to test the boot process and kernel initialization without requiring a physical machine.
+
+Expected Boot Output
+
+During a successful boot, NSK OS reports its initialization progress through the COM1 serial console.
+
+The following is an example of the expected output:
+
 *****************************************************************
 *                 NSK OS v0.3 - Starting Kernel                 *
 *             From-Scratch 32-bit x86 Protected Mode            *
 *****************************************************************
 NSK OS booting...
 
-[NSK KERNEL] Kernel binary loaded at 0x00100000 - 0x00105000 (Size: 20 KB)
-[NSK MULTIBOOT2] Valid Multiboot2 header detected at 0x00010000
+[NSK KERNEL] Kernel binary loaded at 0x00100000 - 0x00105000
+[NSK MULTIBOOT2] Valid Multiboot2 header detected
 [NSK MULTIBOOT2] Bootloader: GRUB 2.06
-[NSK GDT] Global Descriptor Table initialized (5 entries, Base=0x00102040)
-[NSK PIC] 8259 PIC remapped: Master->0x20..0x27, Slave->0x28..0x2f
-[NSK IDT] Interrupt Descriptor Table loaded (256 gates, Base=0x00102100)
-[NSK PIT] 8254 Timer configured at 100 Hz (Divisor: 11931)
+[NSK GDT] Global Descriptor Table initialized
+[NSK PIC] 8259 PIC remapped successfully
+[NSK IDT] Interrupt Descriptor Table loaded
+[NSK PIT] 8254 Timer configured at 100 Hz
 
-[NSK PMM] ==================== MULTIBOOT2 MEMORY MAP ====================
-  Region  0: [0x00000000 - 0x0009fbff]     639 KB | Type: AVAILABLE
-  Region  1: [0x0009fc00 - 0x0009ffff]       1 KB | Type: RESERVED
-  Region  2: [0x000e8000 - 0x000fffff]      96 KB | Type: RESERVED
-  Region  3: [0x00100000 - 0x0feeffff]  260032 KB | Type: AVAILABLE
-  Region  4: [0x0fef0000 - 0x0fefffff]      64 KB | Type: ACPI RECLAIM
-  Region  5: [0x0ff00000 - 0x0fffffff]    1024 KB | Type: RESERVED
-[NSK PMM] ==============================================================
-[NSK PMM] Memory Manager Initialized:
-  Total RAM  : 256 MB (65536 blocks of 4KB)
-  Used Blocks: 1048 (4192 KB)
-  Free Blocks: 64488 (251 MB)
-  Bitmap Loc : 0x00105000 - 0x00107000 (8 KB)
+[NSK PMM] Memory map parsed successfully
+[NSK PMM] Physical memory manager initialized
+[NSK HEAP] Kernel heap initialized
 
-[NSK HEAP] Kernel heap initialized at 0x00400000 (Size: 16 MB)
+[NSK TEST] Running kernel heap allocation tests...
+  Memory allocation tests: PASSED
+  Memory content checks: PASSED
+  Free-block reuse: PASSED
+  Block coalescing: PASSED
 
-[NSK TEST] Running Kernel Heap Allocation Tests...
-  Allocated p1 (64 bytes)   : 0x00400018
-  Allocated p2 (256 bytes)  : 0x00400070
-  Allocated p3 (4096 bytes) : 0x00400188
-  Memory content check: "NSK Kernel Heap Block 1 Test OK" [OK]
-  Memory content check: "NSK Kernel Heap Block 2 Test OK" [OK]
-  Freed p2 (256 bytes) [OK]
-  Re-allocated p4 (128 bytes from freed block): 0x00400070 [OK]
-  Freed all test blocks - coalescing verified [OK]
-
-[NSK KERNEL] Hardware interrupts enabled (EFLAGS.IF = 1)
-[NSK KERNEL] Current system tick count: 1, Uptime: 0 sec
+[NSK KERNEL] Hardware interrupts enabled
+[NSK KERNEL] System timer running
 
 =================================================================
-       >>> PHASE 1 CORE KERNEL INITIALIZATION COMPLETE <<<       
- System: x86 (i686) 32-bit Protected Mode                        
- Core  : Multiboot2, GDT, IDT, PIC, PIT (100Hz), COM1, PMM, Heap 
- Status: Ready for PHASE 2 (Graphics Engine & Framebuffer)       
+       >>> PHASE 1 CORE KERNEL INITIALIZATION COMPLETE <<<
+ System: x86 (i686), 32-bit Protected Mode
+ Core  : Multiboot2, GDT, IDT, PIC, PIT, COM1, PMM, Heap
+ Status: Ready for Phase 2 — Graphics Engine
 =================================================================
-```
 
----
+Note: This is a simplified example of the expected serial output, not a guarantee of the exact messages or values produced by every build. Actual memory addresses, detected RAM, timer values, and test results depend on the implementation and runtime environment.
 
-## 🎯 পরবর্তী ধাপ: Phase 2
-পরবর্তী ধাপে (`PHASE 2 - Graphics engine`) যুক্ত হবে:
-- 1536x1024x32 লিনিয়ার ফ্রেমবাফার ড্রাইভার ও ডাবল বাফারিং (Back Buffer)
-- অ্যান্টি-অ্যালিয়াসড রাউন্ডেড রেকট্যাঙ্গেল ও আলফা ব্লেন্ডিং
-- ফাস্ট বক্স ব্লার (গ্লাস প্যানেলের জন্য)
-- `stb_truetype` ফন্ট রেন্ডারার
-- ওয়ালপেপার বিটম্যাপ ইন্টিগ্রেশন
+Phase 2: Graphics Engine
+
+With the core kernel foundation in place, the next milestone is to develop the graphics engine that will power the NSK OS desktop environment.
+
+Phase 2 is planned to introduce the following features:
+
+- Linear Framebuffer Driver — A 32-bit color framebuffer targeting a resolution of 1536 × 1024, with support for back-buffer rendering and double buffering.
+- Smooth Shape Rendering — Anti-aliased rounded rectangles and other basic graphical primitives for a cleaner interface.
+- Alpha Blending — Transparency support for layered windows, panels, and desktop elements.
+- Fast Box Blur — A lightweight blur implementation for translucent glass-style UI components.
+- TrueType Font Rendering — Integration of "stb_truetype" to render scalable fonts.
+- Wallpaper Support — Bitmap decoding and integration for desktop backgrounds.
+
+The focus is on building these features directly into the operating system rather than relying on a conventional desktop environment.
+
+🔭 Project Direction
+
+NSK OS is being developed incrementally, starting with the kernel and moving toward a complete graphical operating system.
+
+The immediate priority is to establish a reliable graphics pipeline on top of the existing kernel. Once the framebuffer and rendering primitives are working, development can move toward desktop windows, application interfaces, input handling, and other essential user-facing components.
+
+The long-term goal is a lightweight, self-contained operating system with its own kernel and native desktop experience.
+
+Development status should be verified against the current source code and successful build and runtime tests. Features listed in the roadmap are planned until they have been implemented and tested.Phase
