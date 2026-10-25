@@ -1,39 +1,40 @@
-NSK OS v0.3 — A From-Scratch Operating System
+# NSK OS v0.3 — A From-Scratch Operating System
 
-NSK OS is a custom-built operating system designed for 32-bit x86 systems running in i686 Protected Mode. It features its own kernel, memory management system, and bootable graphical interface.
+**NSK OS** is a custom-built operating system designed for 32-bit x86 systems running in i686 Protected Mode. It features its own kernel, memory management system, and bootable graphical interface.
 
 Unlike Linux-based distributions, NSK OS is being developed from the ground up, without relying on Linux or Debian as its foundation. The goal is to build a lightweight operating system with a solid kernel architecture that can eventually support a modern desktop experience.
 
-Phase 1: Boot Process and Core Kernel
+## Phase 1: Boot Process and Core Kernel
 
-Status: Core implementation completed
+**Status: Core implementation completed**
 
 Phase 1 establishes the foundation of NSK OS, including the boot process, CPU configuration, interrupt handling, memory management, and kernel debugging.
 
 The following components have been implemented:
 
-1. Multiboot2 Boot Header — The "boot/boot.asm" file contains a Multiboot2-compliant header using the magic value "0xE85250D6". It also handles the initial 32-bit protected-mode entry point, stack setup, and memory and framebuffer requests.
+1. **Multiboot2 Boot Header** — The `boot/boot.asm` file contains a Multiboot2-compliant header using the magic value `0xE85250D6`. It also handles the initial 32-bit protected-mode entry point, stack setup, and memory and framebuffer requests.
 
-2. Global Descriptor Table (GDT) — Configures flat memory segments for kernel code, kernel data, user code, and user data, providing the foundation for memory segmentation.
+2. **Global Descriptor Table (GDT)** — Configures flat memory segments for kernel code, kernel data, user code, and user data, providing the foundation for memory segmentation.
 
-3. Interrupt Descriptor Table (IDT) — Sets up 256 interrupt gates, with handlers for CPU exceptions and hardware interrupts.
+3. **Interrupt Descriptor Table (IDT)** — Sets up 256 interrupt gates, with handlers for CPU exceptions and hardware interrupts.
 
-4. 8259 Programmable Interrupt Controller (PIC) — Remaps IRQs to avoid conflicts with CPU exception vectors. The master PIC uses vectors "0x20–0x27", while the slave PIC uses "0x28–0x2F".
+4. **8259 Programmable Interrupt Controller (PIC)** — Remaps IRQs to avoid conflicts with CPU exception vectors. The master PIC uses vectors `0x20–0x27`, while the slave PIC uses `0x28–0x2F`.
 
-5. 8254 Programmable Interval Timer (PIT) — Configures the system timer to generate 100 interrupts per second, enabling system tick counting and uptime tracking.
+5. **8254 Programmable Interval Timer (PIT)** — Configures the system timer to generate 100 interrupts per second, enabling system tick counting and uptime tracking.
 
-6. 16550 UART Serial Driver — Initializes the COM1 serial port at "0x3F8" with a baud rate of 38,400 for kernel debugging and diagnostic logging.
+6. **16550 UART Serial Driver** — Initializes the COM1 serial port at `0x3F8` with a baud rate of 38,400 for kernel debugging and diagnostic logging.
 
-7. Freestanding "kprintf" Engine — Provides formatted kernel output with support for "%s", "%d", "%u", "%x", "%p", and "%c".
+7. **Freestanding `kprintf` Engine** — Provides formatted kernel output with support for `%s`, `%d`, `%u`, `%x`, `%p`, and `%c`.
 
-8. Physical Memory Manager (PMM) — Parses the Multiboot2 memory map and uses a bitmap-based allocator to manage physical memory in 4 KiB page frames.
+8. **Physical Memory Manager (PMM)** — Parses the Multiboot2 memory map and uses a bitmap-based allocator to manage physical memory in 4 KiB page frames.
 
-9. Kernel Heap Allocator — Implements "kmalloc" and "kfree", with support for a dynamically managed heap, boundary tags, and free-block coalescing. The planned heap region spans from 4 MiB to 16 MiB.
+9. **Kernel Heap Allocator** — Implements `kmalloc` and `kfree`, with support for a dynamically managed heap, boundary tags, and free-block coalescing. The planned heap region spans from 4 MiB to 16 MiB.
 
 Together, these components provide the initial infrastructure needed to move beyond basic booting and begin developing the operating system's graphics and desktop subsystems.
 
-Repository Structure
+## Repository Structure
 
+```text
 ├── boot/
 │   ├── boot.asm             # Multiboot2 header and boot entry point
 │   └── grub.cfg             # GRUB Multiboot2 configuration
@@ -71,55 +72,69 @@ Repository Structure
 ├── linker.ld                # Kernel linker script
 ├── Makefile                 # Build, ISO, run, test, and clean targets
 └── README.md                # Project documentation
+```
 
-🛠️ Building and Running NSK OS
+## Building and Running NSK OS
 
-Prerequisites
+### Prerequisites
 
 The following tools are required to build and test the project:
 
-- GCC with 32-bit compilation support ("gcc-multilib")
+- GCC with 32-bit compilation support (`gcc-multilib`)
 - NASM
-- GNU Binutils, including "ld"
+- GNU Binutils, including `ld`
 - QEMU System Emulator for x86
-- GRUB utilities ("grub-pc-bin")
-- "xorriso"
-- "mtools"
+- GRUB utilities (`grub-pc-bin`)
+- `xorriso`
+- `mtools`
 
-1. Compile the kernel
+### 1. Compile the kernel
 
+```bash
 make all
+```
 
 This builds the kernel binary at:
 
+```text
 build/kernel.bin
+```
 
-2. Create a bootable ISO
+### 2. Create a bootable ISO
 
+```bash
 make iso
+```
 
 The build process generates:
 
+```text
 nsk-os-0.3.iso
+```
 
 The expected ISO size is approximately 8 MB, keeping the image well below 20 MB.
 
-3. Run NSK OS in QEMU
+### 3. Run NSK OS in QEMU
 
+```bash
 make run
+```
 
 To test the kernel binary directly, use:
 
+```bash
 make run-kernel
+```
 
 These commands provide a convenient way to test the boot process and kernel initialization without requiring a physical machine.
 
-Expected Boot Output
+## Expected Boot Output
 
 During a successful boot, NSK OS reports its initialization progress through the COM1 serial console.
 
 The following is an example of the expected output:
 
+```text
 *****************************************************************
 *                 NSK OS v0.3 - Starting Kernel                 *
 *             From-Scratch 32-bit x86 Protected Mode            *
@@ -153,30 +168,42 @@ NSK OS booting...
  Core  : Multiboot2, GDT, IDT, PIC, PIT, COM1, PMM, Heap
  Status: Ready for Phase 2 — Graphics Engine
 =================================================================
+```
 
-Note: This is a simplified example of the expected serial output, not a guarantee of the exact messages or values produced by every build. Actual memory addresses, detected RAM, timer values, and test results depend on the implementation and runtime environment.
+> **Note:** This is a simplified example of the expected serial output, not a guarantee of the exact messages or values produced by every build. Actual memory addresses, detected RAM, timer values, and test results depend on the implementation and runtime environment.
 
-Phase 2: Graphics Engine
+## Phase 2: Graphics Engine
 
 With the core kernel foundation in place, the next milestone is to develop the graphics engine that will power the NSK OS desktop environment.
 
 Phase 2 is planned to introduce the following features:
 
-- Linear Framebuffer Driver — A 32-bit color framebuffer targeting a resolution of 1536 × 1024, with support for back-buffer rendering and double buffering.
-- Smooth Shape Rendering — Anti-aliased rounded rectangles and other basic graphical primitives for a cleaner interface.
-- Alpha Blending — Transparency support for layered windows, panels, and desktop elements.
-- Fast Box Blur — A lightweight blur implementation for translucent glass-style UI components.
-- TrueType Font Rendering — Integration of "stb_truetype" to render scalable fonts.
-- Wallpaper Support — Bitmap decoding and integration for desktop backgrounds.
+- **Linear Framebuffer Driver** — A 32-bit color framebuffer targeting a resolution of 1536 × 1024, with support for back-buffer rendering and double buffering.
+- **Smooth Shape Rendering** — Anti-aliased rounded rectangles and other basic graphical primitives for a cleaner interface.
+- **Alpha Blending** — Transparency support for layered windows, panels, and desktop elements.
+- **Fast Box Blur** — A lightweight blur implementation for translucent glass-style UI components.
+- **TrueType Font Rendering** — Integration of `stb_truetype` to render scalable fonts.
+- **Wallpaper Support** — Bitmap decoding and integration for desktop backgrounds.
 
 The focus is on building these features directly into the operating system rather than relying on a conventional desktop environment.
 
-🔭 Project Direction
+## Project Direction
 
 NSK OS is being developed incrementally, starting with the kernel and moving toward a complete graphical operating system.
 
 The immediate priority is to establish a reliable graphics pipeline on top of the existing kernel. Once the framebuffer and rendering primitives are working, development can move toward desktop windows, application interfaces, input handling, and other essential user-facing components.
 
-The long-term goal is a lightweight, self-contained operating system with its own kernel and native desktop experience.
+**The long-term goal is a lightweight, self-contained operating system with its own kernel and native desktop experience.**
 
-Development status should be verified against the current source code and successful build and runtime tests. Features listed in the roadmap are planned until they have been implemented and tested.Phase
+> Development status should be verified against the current source code and successful build and runtime tests. Features listed in the roadmap are planned until they have been implemented and tested.
+
+## License
+
+NSK OS is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+
+You are free to use, study, modify, and redistribute NSK OS under the terms of this license. If you distribute modified versions, you must comply with the applicable GPL-3.0 requirements, including providing the corresponding source code where required.
+
+See the [`LICENSE`](LICENSE) file for the full license text.
+
+**SPDX-License-Identifier: GPL-3.0-only**
+
